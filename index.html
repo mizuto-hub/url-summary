@@ -1,0 +1,754 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>要約サービス</title>
+    <style>
+      :root {
+        color-scheme: light;
+        --ink: #15211d;
+        --muted: #66746e;
+        --paper: #f8f6f0;
+        --panel: #ffffff;
+        --line: #dbe2dc;
+        --accent: #0f766e;
+        --accent-strong: #0b5d57;
+        --gold: #b88732;
+        --danger: #a33d1f;
+        --shadow: 0 24px 70px rgba(21, 33, 29, 0.12);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        color: var(--ink);
+        background:
+          linear-gradient(140deg, rgba(15, 118, 110, 0.16), transparent 34%),
+          linear-gradient(310deg, rgba(184, 135, 50, 0.13), transparent 38%),
+          var(--paper);
+        font-family:
+          "Yu Gothic UI", "Hiragino Sans", "Meiryo", system-ui, -apple-system, BlinkMacSystemFont,
+          sans-serif;
+      }
+
+      main {
+        width: min(1040px, calc(100% - 32px));
+        margin: 0 auto;
+        padding: 48px 0;
+      }
+
+      .app {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 320px;
+        gap: 20px;
+        align-items: start;
+      }
+
+      .hero {
+        grid-column: 1 / -1;
+        display: grid;
+        gap: 14px;
+        padding: 6px 0 10px;
+      }
+
+      .eyebrow {
+        width: fit-content;
+        padding: 7px 11px;
+        border: 1px solid rgba(15, 118, 110, 0.18);
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.72);
+        color: var(--accent-strong);
+        font-size: 0.84rem;
+        font-weight: 700;
+      }
+
+      h1 {
+        margin: 0;
+        max-width: 760px;
+        font-size: clamp(2.4rem, 6vw, 5rem);
+        line-height: 1;
+        letter-spacing: 0;
+      }
+
+      .lead {
+        max-width: 720px;
+        margin: 0;
+        color: var(--muted);
+        font-size: 1.05rem;
+        line-height: 1.85;
+      }
+
+      .workspace,
+      .side-panel {
+        border: 1px solid rgba(21, 33, 29, 0.09);
+        border-radius: 8px;
+        background: rgba(255, 255, 255, 0.88);
+        box-shadow: var(--shadow);
+      }
+
+      .workspace {
+        display: grid;
+        gap: 18px;
+        padding: 22px;
+      }
+
+      form {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        gap: 10px;
+      }
+
+      label {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+        clip: rect(0 0 0 0);
+      }
+
+      .url-field {
+        position: relative;
+      }
+
+      .url-field::before {
+        content: "URL";
+        position: absolute;
+        left: 14px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: var(--accent-strong);
+        font-size: 0.78rem;
+        font-weight: 800;
+      }
+
+      input {
+        width: 100%;
+        min-width: 0;
+        height: 54px;
+        padding: 0 16px 0 52px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        color: var(--ink);
+        background: var(--panel);
+        font-size: 1rem;
+        outline: none;
+      }
+
+      input:focus {
+        border-color: var(--accent);
+        box-shadow: 0 0 0 4px rgba(15, 118, 110, 0.16);
+      }
+
+      button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        min-width: 148px;
+        height: 54px;
+        padding: 0 20px;
+        border: 0;
+        border-radius: 8px;
+        background: var(--accent);
+        color: #fff;
+        font-weight: 800;
+        font-size: 0.98rem;
+        cursor: pointer;
+      }
+
+      button:hover {
+        background: var(--accent-strong);
+      }
+
+      button:disabled {
+        cursor: wait;
+        opacity: 0.68;
+      }
+
+      .result {
+        display: grid;
+        gap: 12px;
+        min-height: 210px;
+        padding: 20px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background:
+          linear-gradient(180deg, rgba(248, 246, 240, 0.72), rgba(255, 255, 255, 0.95)),
+          var(--panel);
+      }
+
+      .result-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+      }
+
+      .result-title {
+        margin: 0;
+        color: var(--muted);
+        font-size: 0.9rem;
+        font-weight: 800;
+      }
+
+      .counter {
+        min-width: 68px;
+        padding: 5px 9px;
+        border: 1px solid rgba(184, 135, 50, 0.22);
+        border-radius: 999px;
+        color: #7a541e;
+        background: rgba(184, 135, 50, 0.1);
+        font-size: 0.78rem;
+        font-weight: 800;
+        text-align: center;
+      }
+
+      .summary {
+        margin: 0;
+        font-size: clamp(1.25rem, 2.8vw, 2rem);
+        line-height: 1.55;
+        overflow-wrap: anywhere;
+      }
+
+      .empty {
+        color: var(--muted);
+        font-size: 1rem;
+      }
+
+      .error {
+        color: var(--danger);
+      }
+
+      .status-row {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 10px;
+      }
+
+      .metric {
+        min-height: 82px;
+        padding: 13px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: rgba(248, 246, 240, 0.58);
+      }
+
+      .metric span {
+        display: block;
+        color: var(--muted);
+        font-size: 0.78rem;
+        font-weight: 800;
+      }
+
+      .metric strong {
+        display: block;
+        margin-top: 8px;
+        font-size: 1.06rem;
+      }
+
+      .side-panel {
+        display: grid;
+        gap: 18px;
+        padding: 18px;
+      }
+
+      .side-panel h2 {
+        margin: 0;
+        font-size: 1rem;
+      }
+
+      .tips {
+        display: grid;
+        gap: 10px;
+        margin: 0;
+        padding: 0;
+        list-style: none;
+      }
+
+      .tips li,
+      .history-item {
+        padding: 12px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: rgba(255, 255, 255, 0.64);
+      }
+
+      .tips b {
+        display: block;
+        margin-bottom: 3px;
+        font-size: 0.9rem;
+      }
+
+      .tips span,
+      .history-item a {
+        color: var(--muted);
+        font-size: 0.82rem;
+        line-height: 1.6;
+      }
+
+      .history {
+        display: grid;
+        gap: 10px;
+      }
+
+      .history-list {
+        display: grid;
+        gap: 8px;
+      }
+
+      .history-item p {
+        margin: 0 0 6px;
+        line-height: 1.6;
+        font-size: 0.9rem;
+      }
+
+      .history-item a {
+        display: inline-block;
+        max-width: 100%;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      @media (max-width: 860px) {
+        main {
+          padding: 32px 0;
+        }
+
+        .app {
+          grid-template-columns: 1fr;
+        }
+
+        .side-panel {
+          box-shadow: none;
+        }
+      }
+
+      @media (max-width: 640px) {
+        main {
+          width: min(100% - 24px, 1040px);
+        }
+
+        h1 {
+          font-size: 2.7rem;
+        }
+
+        form,
+        .status-row {
+          grid-template-columns: 1fr;
+        }
+
+        button {
+          width: 100%;
+        }
+
+        .workspace {
+          padding: 16px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <div class="app">
+        <section class="hero" aria-labelledby="page-title">
+          <div class="eyebrow">URLから要点を抽出</div>
+          <h1 id="page-title">要約サービス</h1>
+          <p class="lead">Webページ全体を読み取り、導入文だけではなく見出し・比較軸・重要な本文を踏まえて約140字でまとめます。</p>
+        </section>
+
+        <section class="workspace" aria-label="URL要約フォーム">
+          <form id="summary-form">
+            <label for="url-input">要約したいURL</label>
+            <div class="url-field">
+              <input id="url-input" name="url" type="url" inputmode="url" autocomplete="url" placeholder="https://example.com/article" required />
+            </div>
+            <button id="submit-button" type="submit"><span aria-hidden="true">↵</span>要約する</button>
+          </form>
+
+          <div class="result" aria-live="polite">
+            <div class="result-header">
+              <p class="result-title" id="result-title">結果</p>
+              <span class="counter" id="counter">0字</span>
+            </div>
+            <p class="summary empty" id="summary">URLを入力して要約を開始してください。</p>
+          </div>
+
+          <div class="status-row" aria-label="要約ステータス">
+            <div class="metric"><span>目安</span><strong>約140字</strong></div>
+            <div class="metric"><span>抽出対象</span><strong>見出し・本文・リスト</strong></div>
+            <div class="metric"><span>方式</span><strong>要点優先</strong></div>
+          </div>
+        </section>
+
+        <aside class="side-panel">
+          <section>
+            <h2>要約の見方</h2>
+            <ul class="tips">
+              <li><b>全体像</b><span>ページの主題を先頭でつかめるようにします。</span></li>
+              <li><b>判断材料</b><span>比較記事では選び方や注意点を優先します。</span></li>
+              <li><b>公開版</b><span>GitHub Pagesではブラウザ上で要約します。一部サイトは取得制限で読めない場合があります。</span></li>
+            </ul>
+          </section>
+
+          <section class="history" id="history" hidden>
+            <h2>最近の要約</h2>
+            <div class="history-list" id="history-list"></div>
+          </section>
+        </aside>
+      </div>
+    </main>
+
+    <script>
+      const IMPORTANT_TERMS = ["おすすめ", "ランキング", "比較", "選び方", "メリット", "デメリット", "手数料", "利回り", "リスク", "運用", "実績", "NISA", "投資信託", "ファンド", "初心者", "注意", "ポイント", "結論"];
+      const INTRO_PATTERNS = ["この記事では", "本記事では", "今回は", "ご紹介します", "紹介します", "解説します", "見ていきましょう", "参考にしてください"];
+      const CORS_PROXY = "https://api.allorigins.win/raw?url=";
+      const form = document.querySelector("#summary-form");
+      const input = document.querySelector("#url-input");
+      const button = document.querySelector("#submit-button");
+      const summary = document.querySelector("#summary");
+      const resultTitle = document.querySelector("#result-title");
+      const counter = document.querySelector("#counter");
+      const history = document.querySelector("#history");
+      const historyList = document.querySelector("#history-list");
+      const items = [];
+
+      form.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        const url = input.value.trim();
+        if (!url) return;
+
+        setLoading(true);
+        renderResult("取得中です...", "ページ全体から要点を探しています。");
+
+        try {
+          const data = await summarizeUrl(url);
+          renderResult(data.title || "結果", data.summary);
+          addHistory(data);
+        } catch (error) {
+          renderResult("エラー", error.message || "ページを取得できませんでした。", true);
+        } finally {
+          setLoading(false);
+        }
+      });
+
+      async function summarizeUrl(url) {
+        const parsed = new URL(url);
+        if (!["http:", "https:"].includes(parsed.protocol)) {
+          throw new Error("http または https のURLだけ対応しています。");
+        }
+
+        if (location.hostname === "localhost" || location.hostname === "127.0.0.1") {
+          try {
+            const response = await fetch("/api/summarize", {
+              method: "POST",
+              headers: { "content-type": "application/json" },
+              body: JSON.stringify({ url })
+            });
+            const data = await response.json();
+            if (response.ok) return data;
+          } catch {
+            // Fall back to the static summarizer.
+          }
+        }
+
+        const html = await fetchHtmlThroughProxy(url);
+        const extracted = extractContent(html, url);
+        return {
+          title: extracted.title,
+          summary: summarizeAbout140(extracted),
+          sourceUrl: url
+        };
+      }
+
+      async function fetchHtmlThroughProxy(url) {
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 18000);
+
+        try {
+          const response = await fetch(`${CORS_PROXY}${encodeURIComponent(url)}`, {
+            signal: controller.signal
+          });
+
+          if (!response.ok) {
+            throw new Error("ページを取得できませんでした。別のURLで試してください。");
+          }
+
+          return await response.text();
+        } catch (error) {
+          if (error.name === "AbortError") {
+            throw new Error("ページ取得がタイムアウトしました。");
+          }
+          throw error;
+        } finally {
+          clearTimeout(timeout);
+        }
+      }
+
+      function extractContent(html, sourceUrl) {
+        const cleanHtml = html
+          .replace(/<script[\s\S]*?<\/script>/gi, " ")
+          .replace(/<style[\s\S]*?<\/style>/gi, " ")
+          .replace(/<noscript[\s\S]*?<\/noscript>/gi, " ")
+          .replace(/<(nav|header|footer|aside|form)[\s\S]*?<\/\1>/gi, " ");
+        const title = normalizeText(htmlToText(matchContent(cleanHtml, /<title[^>]*>([\s\S]*?)<\/title>/i)));
+        const description = normalizeText(decodeEntities(readMeta(cleanHtml, "description") || readMeta(cleanHtml, "og:description")));
+        const headline = normalizeText(htmlToText(matchContent(cleanHtml, /<h1[^>]*>([\s\S]*?)<\/h1>/i)));
+        const articleHtml = matchContent(cleanHtml, /<article[^>]*>([\s\S]*?)<\/article>/i) || cleanHtml;
+        const blocks = extractBlocks(articleHtml);
+
+        return {
+          title: title || new URL(sourceUrl).hostname,
+          description,
+          headline,
+          blocks,
+          text: blocks.map((block) => block.text).join(" ")
+        };
+      }
+
+      function extractBlocks(html) {
+        const blocks = [];
+        const tagRegex = /<(h2|h3|p|li|td|th)[^>]*>([\s\S]*?)<\/\1>/gi;
+        let match;
+        while ((match = tagRegex.exec(html))) {
+          const tag = match[1].toLowerCase();
+          const text = normalizeText(htmlToText(match[2]));
+          if (isUsefulBlock(text)) blocks.push({ tag, text });
+        }
+        return dedupeBlocks(blocks).slice(0, 260);
+      }
+
+      function summarizeAbout140({ title, description, headline, blocks, text }) {
+        const targetLength = 140;
+        const allText = [title, headline, description, text].filter(Boolean).join(" ");
+        const investmentSummary = buildInvestmentFundSummary({ title, headline, blocks, text: allText }, targetLength);
+        if (investmentSummary) return investmentSummary;
+
+        const keywords = topKeywords(allText);
+        const scoredBlocks = blocks
+          .map((block, index) => ({ ...block, index, score: scoreBlock(block, keywords, index, title) }))
+          .sort((a, b) => b.score - a.score);
+        const topics = extractTopics({ title, headline, blocks: scoredBlocks });
+        const bestFacts = scoredBlocks.filter((block) => !looksLikeIntro(block.text)).slice(0, 8);
+        const lead = buildLead(title, headline, topics);
+        const detail = buildDetail(bestFacts, topics, targetLength - lead.length);
+        const fallback = description || headline || title || "要約できる本文を見つけられませんでした。";
+        return fitSummary([lead, detail].filter(Boolean).join(" "), targetLength, fallback);
+      }
+
+      function buildInvestmentFundSummary({ title, headline, blocks, text }, targetLength) {
+        const pageTitle = `${title} ${headline}`;
+        if (!/(投資信託|ファンド|NISA)/.test(pageTitle) || !/(おすすめ|ランキング|選び方|銘柄)/.test(pageTitle + text)) return "";
+        const funds = extractNamedItems(blocks, /(eMAXIS|SBI|楽天|iFree|ニッセイ|たわら|インデックス|オルカン|S&P500|全世界株式|米国株式)/, 3);
+        const criteria = ["手数料", "運用実績", "リスク", "デメリット", "選び方"].filter((term) => text.includes(term));
+        const topic = pageTitle.includes("NISA") ? "新NISA向け投資信託" : "投資信託";
+        const fundText = funds.length ? `${funds.join("、")}などの具体的な候補` : "具体的な候補銘柄";
+        const criteriaText = criteria.length ? criteria.slice(0, 4).join("・") : "コスト・実績・リスク";
+        const caution = text.includes("デメリット") || text.includes("注意") ? "購入前の注意点" : "選ぶ際の判断材料";
+        return fitSummary(`${topic}のおすすめ銘柄を、${criteriaText}の観点で比較。${fundText}を取り上げ、${caution}まで含めて失敗しない選び方を整理しています。`, targetLength, title);
+      }
+
+      function extractNamedItems(blocks, pattern, limit) {
+        return unique(
+          blocks
+            .filter((block) => pattern.test(block.text))
+            .map((block) => cleanupTopic(block.text))
+            .map((text) => text.replace(/^(おすすめ)?[\d０-９]+位[:：\s-]*/, ""))
+            .filter((text) => text.length >= 4 && text.length <= 48)
+            .filter((text) => !looksLikeIntro(text))
+        ).slice(0, limit);
+      }
+
+      function buildLead(title, headline, topics) {
+        const topic = cleanTitle(headline || title);
+        const listed = topics.slice(0, 3).join("、");
+        return listed ? `${topic}について、${listed}などの要点を整理。` : `${topic}の要点を整理。`;
+      }
+
+      function buildDetail(blocks, topics, remainingLength) {
+        const fragments = [];
+        for (const block of blocks) {
+          const fragment = compressSentence(block.text);
+          if (!fragment || topics.some((topic) => fragment === topic) || looksLikeIntro(fragment)) continue;
+          const next = [...fragments, fragment].join(" ");
+          if (fragments.length > 0 && next.length > Math.max(60, remainingLength + 20)) break;
+          fragments.push(fragment);
+          if (next.length >= Math.max(45, remainingLength - 15)) break;
+        }
+        return fragments.join(" ");
+      }
+
+      function extractTopics({ title, headline, blocks }) {
+        const titleWords = topKeywords(`${title} ${headline}`).slice(0, 5);
+        const headingTopics = blocks
+          .filter((block) => ["h2", "h3", "li"].includes(block.tag))
+          .map((block) => cleanupTopic(block.text))
+          .filter((text) => text.length >= 3 && text.length <= 34)
+          .filter((text) => !looksLikeIntro(text))
+          .filter((text) => !titleWords.some((word) => text === word));
+        const important = headingTopics.filter((text) => IMPORTANT_TERMS.some((term) => text.includes(term)));
+        return unique([...important, ...headingTopics]).slice(0, 5);
+      }
+
+      function scoreBlock(block, keywords, index, title) {
+        const text = block.text;
+        const lower = text.toLowerCase();
+        const tagScore = { h2: 12, h3: 9, li: 7, p: 4, th: 4, td: 3 }[block.tag] || 1;
+        const keywordScore = keywords.reduce((score, keyword) => score + (lower.includes(keyword) ? 3 : 0), 0);
+        const importantScore = IMPORTANT_TERMS.reduce((score, term) => score + (text.includes(term) ? 4 : 0), 0);
+        const titleScore = topKeywords(title).reduce((score, keyword) => score + (lower.includes(keyword) ? 4 : 0), 0);
+        const numberScore = /[\d０-９]+/.test(text) ? 3 : 0;
+        const lengthScore = text.length >= 24 && text.length <= 120 ? 5 : 0;
+        const introPenalty = looksLikeIntro(text) ? -18 : 0;
+        const positionScore = Math.max(0, 8 - index * 0.05);
+        return tagScore + keywordScore + importantScore + titleScore + numberScore + lengthScore + introPenalty + positionScore;
+      }
+
+      function isUsefulBlock(text) {
+        if (text.length < 12 || text.length > 260) return false;
+        if (/^(PR|広告|目次|関連記事|あわせて読みたい|スポンサーリンク)$/i.test(text)) return false;
+        if (/^[\d\s.,%円年月日:：/\\-]+$/.test(text)) return false;
+        return true;
+      }
+
+      function cleanupTopic(text) {
+        return normalizeText(text)
+          .replace(/^[\d０-９]+[.)．位、\s-]*/, "")
+          .replace(/^第[\d０-９一二三四五六七八九十]+[章位]?\s*/, "")
+          .replace(/[。.!?！？]*$/, "")
+          .trim();
+      }
+
+      function cleanTitle(text) {
+        return normalizeText(text)
+          .replace(/\s*[|｜-]\s*[^|｜-]+$/, "")
+          .replace(/[【】]/g, "")
+          .replace(/[。.!?！？]*$/, "")
+          .slice(0, 54);
+      }
+
+      function compressSentence(text) {
+        const sentence = splitSentences(text)[0] || text;
+        return normalizeText(sentence).replace(/[。.!?！？]*$/, "").replace(/^つまり、?/, "").trim();
+      }
+
+      function fitSummary(summaryText, targetLength, fallback) {
+        const clean = normalizeText(summaryText || fallback).replace(/[。.!?！？]*$/, "");
+        const maxLength = targetLength + 25;
+        if (clean.length <= maxLength) return `${clean}。`;
+        return `${clean.slice(0, maxLength - 3).replace(/[、,;；:：]\s*[^、,;；:：]*$/, "")}...`;
+      }
+
+      function splitSentences(text) {
+        return (normalizeText(text).match(/[^。！？!?]+[。！？!?]?/g) || []).map((sentence) => sentence.trim()).filter(Boolean);
+      }
+
+      function topKeywords(text) {
+        const stopWords = new Set(["こと", "もの", "ため", "よう", "これ", "それ", "こちら", "について", "ます", "です", "する", "した", "いる", "ある", "まとめ", "記事", "方法", "with", "that", "this", "from", "have", "and", "the"]);
+        const counts = new Map();
+        const words = normalizeText(text).match(/[一-龠ぁ-んァ-ヶーA-Za-z0-9]{2,}/g) || [];
+        for (const word of words) {
+          const lower = word.toLowerCase();
+          if (stopWords.has(lower) || lower.length < 2) continue;
+          counts.set(lower, (counts.get(lower) || 0) + 1);
+        }
+        return [...counts.entries()].sort((a, b) => b[1] - a[1]).slice(0, 16).map(([word]) => word);
+      }
+
+      function htmlToText(html) {
+        return decodeEntities(String(html || "").replace(/<br\s*\/?>/gi, " ").replace(/<\/(p|div|li|h[1-6]|td|th)>/gi, " ").replace(/<[^>]+>/g, " "));
+      }
+
+      function normalizeText(text) {
+        return String(text || "").replace(/\s+/g, " ").replace(/\u00a0/g, " ").trim();
+      }
+
+      function decodeEntities(text) {
+        const textarea = document.createElement("textarea");
+        textarea.innerHTML = String(text || "");
+        return textarea.value;
+      }
+
+      function matchContent(text, regex) {
+        const match = text.match(regex);
+        return match ? match[1] : "";
+      }
+
+      function readMeta(html, name) {
+        const tags = html.match(/<meta\b[^>]*>/gi) || [];
+        const wanted = name.toLowerCase();
+        for (const tag of tags) {
+          const nameValue = readAttribute(tag, "name") || readAttribute(tag, "property");
+          if (nameValue?.toLowerCase() === wanted) return readAttribute(tag, "content") || "";
+        }
+        return "";
+      }
+
+      function readAttribute(tag, attribute) {
+        return matchContent(tag, new RegExp(`${attribute}=["']([^"']*)["']`, "i"));
+      }
+
+      function dedupeBlocks(blocks) {
+        const seen = new Set();
+        return blocks.filter((block) => {
+          const key = block.text.replace(/\s/g, "").slice(0, 80);
+          if (seen.has(key)) return false;
+          seen.add(key);
+          return true;
+        });
+      }
+
+      function looksLikeIntro(text) {
+        return INTRO_PATTERNS.some((pattern) => text.includes(pattern));
+      }
+
+      function unique(values) {
+        const seen = new Set();
+        return values.filter((value) => {
+          const key = value.replace(/\s/g, "");
+          if (!key || seen.has(key)) return false;
+          seen.add(key);
+          return true;
+        });
+      }
+
+      function setLoading(isLoading) {
+        button.disabled = isLoading;
+        button.textContent = isLoading ? "要約中..." : "↵ 要約する";
+      }
+
+      function renderResult(title, text, isError = false) {
+        resultTitle.textContent = title;
+        summary.textContent = text;
+        summary.className = `summary${isError ? " error" : ""}${text.length < 30 ? " empty" : ""}`;
+        counter.textContent = `${text.length}字`;
+      }
+
+      function addHistory(data) {
+        items.unshift(data);
+        items.splice(5);
+        history.hidden = false;
+        historyList.replaceChildren(
+          ...items.map((item) => {
+            const wrapper = document.createElement("article");
+            wrapper.className = "history-item";
+            const text = document.createElement("p");
+            text.textContent = item.summary;
+            const link = document.createElement("a");
+            link.href = item.sourceUrl;
+            link.target = "_blank";
+            link.rel = "noreferrer";
+            link.textContent = item.sourceUrl;
+            wrapper.append(text, link);
+            return wrapper;
+          })
+        );
+      }
+    </script>
+  </body>
+</html>

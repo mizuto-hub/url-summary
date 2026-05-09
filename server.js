@@ -5,7 +5,7 @@ import { extname, join, normalize } from "node:path";
 import { readFile } from "node:fs/promises";
 
 const PORT = Number(process.env.PORT || 3000);
-const ROOT = join(process.cwd(), "public");
+const ROOT = process.cwd();
 const MAX_BYTES = 1_500_000;
 const REQUEST_TIMEOUT_MS = 12_000;
 const USER_AGENT = "Mozilla/5.0 (compatible; SummaryService/1.0)";
