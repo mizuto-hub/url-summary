@@ -1,0 +1,548 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>要約サービス</title>
+    <style>
+      :root {
+        color-scheme: light;
+        --ink: #15211d;
+        --muted: #66746e;
+        --soft: #eef3ef;
+        --paper: #f8f6f0;
+        --panel: #ffffff;
+        --line: #dbe2dc;
+        --accent: #0f766e;
+        --accent-strong: #0b5d57;
+        --gold: #b88732;
+        --danger: #a33d1f;
+        --shadow: 0 24px 70px rgba(21, 33, 29, 0.12);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        color: var(--ink);
+        background:
+          linear-gradient(140deg, rgba(15, 118, 110, 0.16), transparent 34%),
+          linear-gradient(310deg, rgba(184, 135, 50, 0.13), transparent 38%),
+          var(--paper);
+        font-family:
+          "Yu Gothic UI", "Hiragino Sans", "Meiryo", system-ui, -apple-system, BlinkMacSystemFont,
+          sans-serif;
+      }
+
+      main {
+        width: min(1040px, calc(100% - 32px));
+        margin: 0 auto;
+        padding: 48px 0;
+      }
+
+      .app {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 320px;
+        gap: 20px;
+        align-items: start;
+      }
+
+      .hero {
+        grid-column: 1 / -1;
+        display: grid;
+        gap: 14px;
+        padding: 6px 0 10px;
+      }
+
+      .eyebrow {
+        display: inline-flex;
+        width: fit-content;
+        align-items: center;
+        gap: 8px;
+        padding: 7px 11px;
+        border: 1px solid rgba(15, 118, 110, 0.18);
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.72);
+        color: var(--accent-strong);
+        font-size: 0.84rem;
+        font-weight: 700;
+      }
+
+      h1 {
+        margin: 0;
+        max-width: 760px;
+        font-size: clamp(2.4rem, 6vw, 5rem);
+        line-height: 1;
+        letter-spacing: 0;
+      }
+
+      .lead {
+        max-width: 720px;
+        margin: 0;
+        color: var(--muted);
+        font-size: 1.05rem;
+        line-height: 1.85;
+      }
+
+      .workspace,
+      .side-panel {
+        border: 1px solid rgba(21, 33, 29, 0.09);
+        border-radius: 8px;
+        background: rgba(255, 255, 255, 0.88);
+        box-shadow: var(--shadow);
+        backdrop-filter: blur(14px);
+      }
+
+      .workspace {
+        display: grid;
+        gap: 18px;
+        padding: 22px;
+      }
+
+      form {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        gap: 10px;
+      }
+
+      label {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+        clip: rect(0 0 0 0);
+      }
+
+      .url-field {
+        position: relative;
+      }
+
+      .url-field::before {
+        content: "URL";
+        position: absolute;
+        left: 14px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: var(--accent-strong);
+        font-size: 0.78rem;
+        font-weight: 800;
+      }
+
+      input {
+        width: 100%;
+        min-width: 0;
+        height: 54px;
+        padding: 0 16px 0 52px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        color: var(--ink);
+        background: var(--panel);
+        font-size: 1rem;
+        outline: none;
+        transition:
+          border-color 0.18s ease,
+          box-shadow 0.18s ease;
+      }
+
+      input:focus {
+        border-color: var(--accent);
+        box-shadow: 0 0 0 4px rgba(15, 118, 110, 0.16);
+      }
+
+      button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        min-width: 148px;
+        height: 54px;
+        padding: 0 20px;
+        border: 0;
+        border-radius: 8px;
+        background: var(--accent);
+        color: #fff;
+        font-weight: 800;
+        font-size: 0.98rem;
+        cursor: pointer;
+        transition:
+          transform 0.16s ease,
+          background 0.16s ease,
+          opacity 0.16s ease;
+      }
+
+      button:hover {
+        background: var(--accent-strong);
+        transform: translateY(-1px);
+      }
+
+      button:disabled {
+        cursor: wait;
+        opacity: 0.68;
+        transform: none;
+      }
+
+      .result {
+        display: grid;
+        gap: 12px;
+        min-height: 210px;
+        padding: 20px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background:
+          linear-gradient(180deg, rgba(248, 246, 240, 0.72), rgba(255, 255, 255, 0.95)),
+          var(--panel);
+      }
+
+      .result-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+      }
+
+      .result-title {
+        margin: 0;
+        color: var(--muted);
+        font-size: 0.9rem;
+        font-weight: 800;
+      }
+
+      .counter {
+        min-width: 68px;
+        padding: 5px 9px;
+        border: 1px solid rgba(184, 135, 50, 0.22);
+        border-radius: 999px;
+        color: #7a541e;
+        background: rgba(184, 135, 50, 0.1);
+        font-size: 0.78rem;
+        font-weight: 800;
+        text-align: center;
+      }
+
+      .summary {
+        margin: 0;
+        font-size: clamp(1.25rem, 2.8vw, 2rem);
+        line-height: 1.55;
+        overflow-wrap: anywhere;
+      }
+
+      .empty {
+        color: var(--muted);
+        font-size: 1rem;
+      }
+
+      .error {
+        color: var(--danger);
+      }
+
+      .status-row {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 10px;
+      }
+
+      .metric {
+        min-height: 82px;
+        padding: 13px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: rgba(248, 246, 240, 0.58);
+      }
+
+      .metric span {
+        display: block;
+        color: var(--muted);
+        font-size: 0.78rem;
+        font-weight: 800;
+      }
+
+      .metric strong {
+        display: block;
+        margin-top: 8px;
+        font-size: 1.06rem;
+      }
+
+      .side-panel {
+        display: grid;
+        gap: 18px;
+        padding: 18px;
+      }
+
+      .side-panel h2 {
+        margin: 0;
+        font-size: 1rem;
+      }
+
+      .tips {
+        display: grid;
+        gap: 10px;
+        margin: 0;
+        padding: 0;
+        list-style: none;
+      }
+
+      .tips li {
+        display: grid;
+        gap: 3px;
+        padding: 12px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: rgba(255, 255, 255, 0.64);
+      }
+
+      .tips b {
+        font-size: 0.9rem;
+      }
+
+      .tips span {
+        color: var(--muted);
+        font-size: 0.82rem;
+        line-height: 1.6;
+      }
+
+      .history {
+        display: grid;
+        gap: 10px;
+      }
+
+      .history-list {
+        display: grid;
+        gap: 8px;
+      }
+
+      .history-item {
+        padding: 12px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: rgba(248, 246, 240, 0.58);
+      }
+
+      .history-item p {
+        margin: 0 0 6px;
+        line-height: 1.6;
+        font-size: 0.9rem;
+      }
+
+      .history-item a {
+        display: inline-block;
+        max-width: 100%;
+        color: var(--muted);
+        font-size: 0.78rem;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      @media (max-width: 860px) {
+        main {
+          padding: 32px 0;
+        }
+
+        .app {
+          grid-template-columns: 1fr;
+        }
+
+        .side-panel {
+          box-shadow: none;
+        }
+      }
+
+      @media (max-width: 640px) {
+        main {
+          width: min(100% - 24px, 1040px);
+        }
+
+        form,
+        .status-row {
+          grid-template-columns: 1fr;
+        }
+
+        button {
+          width: 100%;
+        }
+
+        .workspace {
+          padding: 16px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <div class="app">
+        <section class="hero" aria-labelledby="page-title">
+          <div class="eyebrow">URLから要点を抽出</div>
+          <h1 id="page-title">要約サービス</h1>
+          <p class="lead">Webページ全体を読み取り、導入文だけではなく見出し・比較軸・重要な本文を踏まえて約140字でまとめます。</p>
+        </section>
+
+        <section class="workspace" aria-label="URL要約フォーム">
+          <form id="summary-form">
+            <label for="url-input">要約したいURL</label>
+            <div class="url-field">
+              <input
+                id="url-input"
+                name="url"
+                type="url"
+                inputmode="url"
+                autocomplete="url"
+                placeholder="https://example.com/article"
+                required
+              />
+            </div>
+            <button id="submit-button" type="submit">
+              <span aria-hidden="true">↵</span>
+              要約する
+            </button>
+          </form>
+
+          <div class="result" aria-live="polite">
+            <div class="result-header">
+              <p class="result-title" id="result-title">結果</p>
+              <span class="counter" id="counter">0字</span>
+            </div>
+            <p class="summary empty" id="summary">URLを入力して要約を開始してください。</p>
+          </div>
+
+          <div class="status-row" aria-label="要約ステータス">
+            <div class="metric">
+              <span>目安</span>
+              <strong>約140字</strong>
+            </div>
+            <div class="metric">
+              <span>抽出対象</span>
+              <strong>見出し・本文・リスト</strong>
+            </div>
+            <div class="metric">
+              <span>方式</span>
+              <strong>要点優先</strong>
+            </div>
+          </div>
+        </section>
+
+        <aside class="side-panel">
+          <section>
+            <h2>要約の見方</h2>
+            <ul class="tips">
+              <li>
+                <b>全体像</b>
+                <span>ページの主題を先頭でつかめるようにします。</span>
+              </li>
+              <li>
+                <b>判断材料</b>
+                <span>比較記事では選び方や注意点を優先します。</span>
+              </li>
+              <li>
+                <b>具体例</b>
+                <span>ランキングや商品名が重要な場合は候補名も残します。</span>
+              </li>
+            </ul>
+          </section>
+
+          <section class="history" id="history" hidden>
+            <h2>最近の要約</h2>
+            <div class="history-list" id="history-list"></div>
+          </section>
+        </aside>
+      </div>
+    </main>
+
+    <script>
+      const form = document.querySelector("#summary-form");
+      const input = document.querySelector("#url-input");
+      const button = document.querySelector("#submit-button");
+      const summary = document.querySelector("#summary");
+      const resultTitle = document.querySelector("#result-title");
+      const counter = document.querySelector("#counter");
+      const history = document.querySelector("#history");
+      const historyList = document.querySelector("#history-list");
+      const items = [];
+      const apiUrl = location.protocol === "file:" ? "http://localhost:3000/api/summarize" : "/api/summarize";
+
+      if (location.protocol === "file:") {
+        renderResult(
+          "起動が必要です",
+          "このHTMLを直接開いているため、先に start.cmd を実行して http://localhost:3000 から開いてください。"
+        );
+      }
+
+      form.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        const url = input.value.trim();
+        if (!url) return;
+
+        setLoading(true);
+        renderResult("取得中です...", "ページ全体から要点を探しています。");
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 18000);
+
+        try {
+          const response = await fetch(apiUrl, {
+            method: "POST",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify({ url }),
+            signal: controller.signal
+          });
+          const data = await response.json();
+
+          if (!response.ok) {
+            throw new Error(data.error || "要約に失敗しました。");
+          }
+
+          renderResult(data.title || "結果", data.summary);
+          addHistory(data);
+        } catch (error) {
+          const message =
+            error.name === "AbortError"
+              ? "応答がありません。サーバーを再起動してからもう一度試してください。"
+              : error instanceof TypeError
+                ? "サーバーに接続できません。start.cmd を実行してから http://localhost:3000 を開いてください。"
+                : error.message;
+          renderResult("エラー", message, true);
+        } finally {
+          clearTimeout(timeoutId);
+          setLoading(false);
+        }
+      });
+
+      function setLoading(isLoading) {
+        button.disabled = isLoading;
+        button.textContent = isLoading ? "要約中..." : "↵ 要約する";
+      }
+
+      function renderResult(title, text, isError = false) {
+        resultTitle.textContent = title;
+        summary.textContent = text;
+        summary.className = `summary${isError ? " error" : ""}${text.length < 30 ? " empty" : ""}`;
+        counter.textContent = `${text.length}字`;
+      }
+
+      function addHistory(data) {
+        items.unshift(data);
+        items.splice(5);
+        history.hidden = false;
+        historyList.replaceChildren(
+          ...items.map((item) => {
+            const wrapper = document.createElement("article");
+            wrapper.className = "history-item";
+
+            const text = document.createElement("p");
+            text.textContent = item.summary;
+
+            const link = document.createElement("a");
+            link.href = item.sourceUrl;
+            link.target = "_blank";
+            link.rel = "noreferrer";
+            link.textContent = item.sourceUrl;
+
+            wrapper.append(text, link);
+            return wrapper;
+          })
+        );
+      }
+    </script>
+  </body>
+</html>
